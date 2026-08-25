@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Screenshot Extractor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      color: #2d3748;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+
+    header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .subtitle { opacity: 0.9; font-size: 1.05rem; }
+
+    section {
+      padding: 2rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    section:last-child { border-bottom: none; }
+    section h2 { font-size: 1.4rem; margin-bottom: 1.2rem; color: #2d3748; }
+
+    .upload-label { display: block; cursor: pointer; }
+
+    .upload-box {
+      border: 3px dashed #cbd5e0;
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      transition: all 0.2s ease;
+      color: #718096;
+    }
+    .upload-box:hover, .upload-box.drag-over {
+      border-color: #667eea;
+      background: #f7fafc;
+      color: #667eea;
+    }
+    .upload-box svg { margin-bottom: 1rem; }
+    .upload-box p { margin: 0.3rem 0; }
+    .hint { font-size: 0.9rem; opacity: 0.7; }
+
+    #videoPlayer {
+      width: 100%;
+      max-height: 400px;
+      border-radius: 8px;
+      background: #000;
+      margin-bottom: 1rem;
+    }
+
+    .video-info {
+      background: #f7fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: #4a5568;
+    }
+    .video-info span { display: inline-block; margin-right: 1.5rem; }
+    .video-info strong { color: #2d3748; }
+
+    .btn {
+      padding: 0.75rem 1.75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #667eea; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; }
+    .btn-secondary { background: #48bb78; color: #fff; }
+    .btn-secondary:hover:not(:disabled) { background: #38a169; }
+
+    .progress-bar {
+      width: 100%;
+      height: 24px;
+      background: #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+    #progressText { text-align: center; font-weight: 600; color: #4a5568; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .results-header h2 { margin: 0; }
+    .results-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .screenshot-item {
+      background: #f7fafc;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .screenshot-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+    .screenshot-item img { width: 100%; height: auto; display: block; cursor: pointer; }
+
+    .screenshot-info {
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .screenshot-timestamp { font-weight: 600; color: #4a5568; }
+    .screenshot-download {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .screenshot-download:hover { text-decoration: underline; }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      cursor: pointer;
+      padding: 2rem;
+    }
+    .lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      section { padding: 1.25rem; }
+      .screenshots-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Estrattore di Screenshot Video</h1>
+      <p class="subtitle">Carica un video e ottieni uno screenshot per ogni secondo</p>
+    </header>
+
+    <section class="upload-section">
+      <label for="videoInput" class="upload-label">
+        <div class="upload-box" id="uploadBox">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <p><strong>Clicca per selezionare un video</strong></p>
+          <p class="hint">oppure trascinalo qui</p>
+        </div>
+        <input type="file" id="videoInput" accept="video/*" hidden />
+      </label>
+    </section>
+
+    <section class="preview-section" id="previewSection" hidden>
+      <h2>Anteprima</h2>
+      <video id="videoPlayer" controls></video>
+      <div class="video-info" id="videoInfo"></div>
+      <button id="processBtn" class="btn btn-primary">Estrai Screenshot</button>
+    </section>
+
+    <section class="progress-section" id="progressSection" hidden>
+      <h2>Elaborazione in corso...</h2>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <p id="progressText">0%</p>
+    </section>
+
+    <section class="results-section" id="resultsSection" hidden>
+      <div class="results-header">
+        <h2>Screenshot Estratti (<span id="screenshotCount">0</span>)</h2>
+        <div class="results-actions">
+          <button id="downloadPdfBtn" class="btn btn-primary" disabled>Scarica PDF</button>
+          <button id="downloadAllBtn" class="btn btn-secondary">Scarica PNG</button>
+        </div>
+      </div>
+      <div class="screenshots-grid" id="screenshotsGrid"></div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const videoInput = document.getElementById('videoInput');
+      const uploadBox = document.getElementById('uploadBox');
+      const previewSection = document.getElementById('previewSection');
+      const videoPlayer = document.getElementById('videoPlayer');
+      const videoInfo = document.getElementById('videoInfo');
+      const processBtn = document.getElementById('processBtn');
+      const progressSection = document.getElementById('progressSection');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      const resultsSection = document.getElementById('resultsSection');
+      const screenshotsGrid = document.getElementById('screenshotsGrid');
+      const screenshotCount = document.getElementById('screenshotCount');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+      const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+
+      let currentFile = null;
+      let screenshots = [];
+      let pdfBlob = null;
+
+      ['dragover', 'dragenter'].forEach(evt => {
+        uploadBox.addEventListener(evt, (e) => {
+          e.preventDefault();
+          uploadBox.classList.add('drag-over');
+        });
+      });
+      ['dragleave', 'drop'].forEach(evt => {
+        uploadBox.addEventListener(evt, (e) => {
+          e.preventDefault();
+          uploadBox.classList.remove('drag-over');
+        });
+      });
+      uploadBox.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('video/')) {
+          handleFile(file);
+        } else {
+          alert('Per favore seleziona un file video valido.');
+        }
+      });
+
+      videoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleFile(file);
+      });
+
+      function handleFile(file) {
+        currentFile = file;
+        const url = URL.createObjectURL(file);
+        videoPlayer.src = url;
+        previewSection.hidden = false;
+        resultsSection.hidden = true;
+        progressSection.hidden = true;
+        screenshots = [];
+        screenshotsGrid.innerHTML = '';
+
+        videoPlayer.addEventListener('loadedmetadata', () => {
+          const duration = videoPlayer.duration;
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          videoInfo.innerHTML = `
+            <span><strong>Nome:</strong> ${escapeHtml(file.name)}</span>
+            <span><strong>Durata:</strong> ${formatTime(duration)}</span>
+            <span><strong>Risoluzione:</strong> ${videoPlayer.videoWidth}×${videoPlayer.videoHeight}</span>
+            <span><strong>Dimensione:</strong> ${sizeMB} MB</span>
+            <span><strong>Screenshot previsti:</strong> ${Math.floor(duration) + 1}</span>
+          `;
+        }, { once: true });
+      }
+
+      processBtn.addEventListener('click', async () => {
+        if (!currentFile) return;
+        processBtn.disabled = true;
+        progressSection.hidden = false;
+        resultsSection.hidden = true;
+        screenshots = [];
+        pdfBlob = null;
+        downloadPdfBtn.disabled = true;
+        screenshotsGrid.innerHTML = '';
+
+        try {
+          await extractScreenshots();
+          resultsSection.hidden = false;
+          screenshotCount.textContent = screenshots.length;
+          progressText.textContent = 'Generazione PDF in corso...';
+          progressFill.style.width = '100%';
+          pdfBlob = await buildPdf(screenshots);
+          downloadPdfBtn.disabled = false;
+          progressSection.hidden = true;
+        } catch (err) {
+          alert('Errore durante l\'estrazione: ' + err.message);
+          progressSection.hidden = true;
+        } finally {
+          processBtn.disabled = false;
+        }
+      });
+
+      function extractScreenshots() {
+        return new Promise((resolve, reject) => {
+          const video = document.createElement('video');
+          video.preload = 'auto';
+          video.muted = true;
+          video.src = videoPlayer.src;
+
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          video.addEventListener('loadedmetadata', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const duration = video.duration;
+            const totalFrames = Math.floor(duration) + 1;
+            let currentSecond = 0;
+
+            const captureNext = () => {
+              if (currentSecond > Math.floor(duration)) {
+                resolve();
+                return;
+              }
+              video.currentTime = Math.min(currentSecond, duration);
+            };
+
+            video.addEventListener('seeked', () => {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const timestamp = currentSecond;
+                  screenshots.push({ blob, url, timestamp });
+                  addScreenshotToGrid(url, timestamp);
+
+                  const pct = Math.round(((currentSecond + 1) / totalFrames) * 100);
+                  progressFill.style.width = pct + '%';
+                  progressText.textContent = `${pct}% — Screenshot ${currentSecond + 1}/${totalFrames}`;
+                }
+                currentSecond++;
+                captureNext();
+              }, 'image/png');
+            });
+
+            video.addEventListener('error', () => reject(new Error('Impossibile leggere il video.')));
+
+            captureNext();
+          }, { once: true });
+
+          video.addEventListener('error', () => reject(new Error('Impossibile caricare il video.')));
+        });
+      }
+
+      function addScreenshotToGrid(url, timestamp) {
+        const item = document.createElement('div');
+        item.className = 'screenshot-item';
+        item.innerHTML = `
+          <img src="${url}" alt="Screenshot al secondo ${timestamp}" />
+          <div class="screenshot-info">
+            <span class="screenshot-timestamp">${formatTime(timestamp)}</span>
+            <a href="${url}" download="screenshot_${String(timestamp).padStart(4, '0')}.png" class="screenshot-download">⬇ PNG</a>
+          </div>
+        `;
+        item.querySelector('img').addEventListener('click', () => openLightbox(url));
+        screenshotsGrid.appendChild(item);
+      }
+
+      function openLightbox(url) {
+        const box = document.createElement('div');
+        box.className = 'lightbox';
+        box.innerHTML = `<img src="${url}" alt="Screenshot ingrandito" />`;
+        box.addEventListener('click', () => box.remove());
+        document.body.appendChild(box);
+      }
+
+      downloadPdfBtn.addEventListener('click', () => {
+        if (!pdfBlob) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(pdfBlob);
+        a.download = 'screenshots.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+
+      async function buildPdf(shots) {
+        const pages = [];
+        for (const s of shots) {
+          const img = await loadImage(s.url);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          const jpegBlob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.82));
+          const jpegBytes = new Uint8Array(await jpegBlob.arrayBuffer());
+          pages.push({ w: img.naturalWidth, h: img.naturalHeight, jpeg: jpegBytes, timestamp: s.timestamp });
+        }
+
+        const encoder = new TextEncoder();
+        const chunks = [];
+        let pos = 0;
+        const offsets = [];
+
+        const pushStr = (s) => { const b = encoder.encode(s); chunks.push(b); pos += b.length; };
+        const pushBytes = (b) => { chunks.push(b); pos += b.length; };
+        const beginObj = (n) => { offsets[n] = pos; pushStr(`${n} 0 obj\n`); };
+        const endObj = () => pushStr('\nendobj\n');
+
+        pushStr('%PDF-1.4\n');
+        pushBytes(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+
+        const pageObjIds = pages.map((_, i) => 3 + i * 3);
+        const imgObjIds = pages.map((_, i) => 4 + i * 3);
+        const contentObjIds = pages.map((_, i) => 5 + i * 3);
+
+        beginObj(1);
+        pushStr('<< /Type /Catalog /Pages 2 0 R >>');
+        endObj();
+
+        beginObj(2);
+        pushStr(`<< /Type /Pages /Kids [${pageObjIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pages.length} >>`);
+        endObj();
+
+        const pageW = 595, pageH = 842;
+        pages.forEach((p, i) => {
+          const scale = Math.min(pageW / p.w, pageH / p.h);
+          const imgW = p.w * scale;
+          const imgH = p.h * scale;
+          const x = (pageW - imgW) / 2;
+          const y = (pageH - imgH) / 2;
+
+          beginObj(pageObjIds[i]);
+          pushStr(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 ${imgObjIds[i]} 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ${contentObjIds[i]} 0 R >>`);
+          endObj();
+
+          beginObj(imgObjIds[i]);
+          pushStr(`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpeg.length} >>\nstream\n`);
+          pushBytes(p.jpeg);
+          pushStr('\nendstream');
+          endObj();
+
+          const content = `q\n${imgW.toFixed(3)} 0 0 ${imgH.toFixed(3)} ${x.toFixed(3)} ${y.toFixed(3)} cm\n/Im0 Do\nQ\n`;
+          const contentBytes = encoder.encode(content);
+          beginObj(contentObjIds[i]);
+          pushStr(`<< /Length ${contentBytes.length} >>\nstream\n`);
+          pushBytes(contentBytes);
+          pushStr('endstream');
+          endObj();
+        });
+
+        const xrefOffset = pos;
+        const totalObjects = 2 + pages.length * 3;
+        pushStr(`xref\n0 ${totalObjects + 1}\n0000000000 65535 f \n`);
+        for (let i = 1; i <= totalObjects; i++) {
+          pushStr(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+        }
+        pushStr(`trailer\n<< /Size ${totalObjects + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+        const total = chunks.reduce((a, b) => a + b.length, 0);
+        const out = new Uint8Array(total);
+        let o = 0;
+        for (const c of chunks) { out.set(c, o); o += c.length; }
+        return new Blob([out], { type: 'application/pdf' });
+      }
+
+      function loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Impossibile caricare l\'immagine.'));
+          img.src = url;
+        });
+      }
+
+      downloadAllBtn.addEventListener('click', async () => {
+        if (!screenshots.length) return;
+        downloadAllBtn.disabled = true;
+        downloadAllBtn.textContent = 'Download in corso...';
+        try {
+          for (let i = 0; i < screenshots.length; i++) {
+            const s = screenshots[i];
+            const a = document.createElement('a');
+            a.href = s.url;
+            a.download = `screenshot_${String(s.timestamp).padStart(4, '0')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            await new Promise(r => setTimeout(r, 150));
+          }
+        } finally {
+          downloadAllBtn.disabled = false;
+          downloadAllBtn.textContent = 'Scarica Tutti';
+        }
+      });
+
+      function formatTime(seconds) {
+        const s = Math.floor(seconds);
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+    })();
+  </script>
+</body>
+</html>
