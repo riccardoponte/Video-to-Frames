@@ -1,3 +1,9 @@
+🌐 **Lingua / Language:** [🇮🇹 Italiano](#italiano) · [🇬🇧 English](#english)
+
+---
+
+<a id="italiano"></a>
+
 # Estrattore di Screenshot Video
 
 Applicazione web che estrae automaticamente uno screenshot per ogni secondo di un video caricato, interamente lato client: nessun server coinvolto, nessun caricamento online.
@@ -56,3 +62,66 @@ index.html   # applicazione completa: markup, stile e logica in un unico file
 ## Note
 
 Il progetto non richiede alcun build step né dipendenze da installare: basta aprire il file HTML per utilizzarlo, sia in locale che pubblicato su qualsiasi hosting statico. Video molto lunghi o ad alta risoluzione possono richiedere più tempo ed memoria del browser, poiché ogni fotogramma viene mantenuto in memoria fino al download.
+
+---
+
+<a id="english"></a>
+
+# Video Screenshot Extractor
+
+A web application that automatically extracts one screenshot per second from an uploaded video, entirely client-side: no server involved, no online uploads.
+
+## Overview
+
+The app is a single-page application (`index.html`) that allows you to upload a video file, preview it, and generate a sequence of screenshots (one for each second of duration), downloadable individually, in bulk, or collected into a single PDF.
+
+## Features
+
+### Video Upload
+* File selection via click or drag & drop into the designated area.
+* Video preview with built-in player.
+* Uploaded file information: name, duration, resolution, size in MB, and expected number of screenshots.
+
+### Screenshot Extraction
+* Automatic frame capture for every second of the video using `<canvas>`.
+* Progress bar with percentage and count of generated screenshots.
+* Results grid with previews of each screenshot and its corresponding timestamp (mm:ss).
+* Enlarged view (lightbox) when clicking on a screenshot.
+
+### Downloading Results
+* Download individual screenshots in PNG format.
+* Download all screenshots in bulk in PNG format.
+* Generation and download of a single PDF file containing all screenshots, one per page (A4 format, JPEG compressed images), built internally without external libraries.
+
+## Input Video Formats
+
+Any video format natively supported by the browser (via the HTML `<video>` element), such as MP4, WebM, Ogg.
+
+## Technologies Used
+
+The application uses no external libraries: pure vanilla HTML, CSS, and JavaScript.
+
+* **Canvas API** for extracting frames from the video.
+* **Manual PDF generation**: the file is constructed byte-by-byte following the PDF 1.4 specification, embedding images as JPEG streams (`DCTDecode`), without relying on any third-party library.
+
+## How to Use
+
+1. Open `index.html` in a modern browser (Chrome, Firefox, Edge, Safari).
+2. Upload a video by dragging it into the designated area or clicking to select it from the file system.
+3. Check the video preview and information, then click "Estrai Screenshot" (Extract Screenshots).
+4. Wait for the progress bar to finish: screenshots will be generated and, immediately after, the summary PDF.
+5. Download the results using the "Scarica PDF" (Download PDF) or "Scarica PNG" (Download PNG - all screenshots) buttons, or download individual screenshots from the grid.
+
+## Privacy
+
+No video or image is sent to a server: the entire processing, from frame extraction to PDF generation, takes place within the user's browser.
+
+## Project Structure
+
+```
+index.html   # complete application: markup, styles, and logic in a single file
+```
+
+## Notes
+
+The project requires no build step or dependencies to install: simply open the HTML file to use it, either locally or hosted on any static hosting service. Very long or high-resolution videos may require more time and browser memory, as each frame is held in memory until downloaded.
